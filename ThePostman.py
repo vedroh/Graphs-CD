@@ -1,96 +1,156 @@
 import pygame
 import random
+import json
 
-pygame.init()
-
-window_width = 600
-window_height = 600
-
-width, height = 500, 500 # field
-cell_size = 50
-rows = height // cell_size
-cols = width // cell_size
-
-indent_x = (window_width - width) // 2
-indent_y = (window_height - height) // 2
-
-# Цвета
-WHITE = (255, 255, 255)
-BLACK = (100, 100, 100)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-
-used_coordinates = []
-
-screen = pygame.display.set_mode((window_width, window_height))
-pygame.display.set_caption("Postman")
+from map_objects import *
 
 
-count_of_points = random.randint(3, 8)
-points = []
-for i in range(count_of_points):
-    x = random.randint(0, cols - 1) * cell_size + indent_x
-    y = random.randint(0, rows - 1) * cell_size + indent_y
-    points.append((x, y))
-    used_coordinates.append((x, y))
+class Grid:
+    def __init__(self, width, height, window_width, window_height, cell_size, line_color):
+        self.width = width
+        self.height = height
+        self.window_width = window_width
+        self.window_height = window_height
+        self.cell_size = cell_size
+        self.rows = height // cell_size
+        self.cols = width // cell_size
+        self.indent_x = (window_width - width) // 2
+        self.indent_y = (window_height - height) // 2
+        self.line_color = line_color
 
-# # __FACTORY COORDINATES__
-# x_factory = random.randint(0, cols - 2) * cell_size + indent_x
-# y_factory = random.randint(0, rows - 2) * cell_size + indent_y
-# if (x_factory, y_factory) not in used_coordinates:
-#     used_coordinates.append((x_factory, y_factory))
-#
-#
-#
-# # __SCHOOL COORDINATES__
-# x_school = random.randint(0, cols - 2) * cell_size + indent_x
-# y_school = random.randint(0, rows - 2) * cell_size + indent_y
-# if (x_school, y_school) not in used_coordinates:
-#     used_coordinates.append((x_school, y_school))
+    def draw(self, surface):
+        for row in range(self.rows):
+            for col in range(self.cols):
+                x = self.indent_x + col * self.cell_size
+                y = self.indent_y + row * self.cell_size
+                pygame.draw.rect(surface, self.line_color, (x, y, self.cell_size, self.cell_size), 1)
 
 
-running = True
-while running:
-    screen.fill(WHITE)
+class Game:
+    WHITE = (255, 255, 255)
+    BLACK = (100, 100, 100)
+    ROAD_COLOR = (150, 150, 150)
+    FONT_COLOR = (0, 0, 0)
 
-    # ПОЛЕ
-    for row in range(width // cell_size):
-        for col in range(height // cell_size):
-            x = indent_x + col * cell_size
-            y = indent_y + row * cell_size
-            pygame.draw.rect(screen, BLACK, (x, y, cell_size, cell_size), 1)
+    def __init__(self, map_file=None):
+        pygame.init()
+        # Параметры окна
+        self.window_width = 600
+        self.window_height = 600
+        # Значения по умолчанию для игрового поля
+        self.width = 500
+        self.height = 500
+        self.cell_size = 50
+        # Инициализация экрана и шрифта
+        self.screen = pygame.display.set_mode((self.window_width, self.window_height))
+        pygame.display.set_caption("Postman")
+        self.clock = pygame.time.Clock()
+        self.font = pygame.font.SysFont(None, 24)
+        if map_file:
+            self.load_map(map_file)
+        else:
+            self.grid = Grid(self.width, self.height, self.window_width, self.window_height,
+                             self.cell_size, self.BLACK)
+            self.postman = Postman('assets/почтальон стоит.png', (self.cell_size, self.cell_size), self.cell_size)
+            self.houses = []
+            count_of_points = random.randint(3, 8)
+            used_coordinates = []
+            for _ in range(count_of_points):
+                x = random.randint(0, self.grid.cols - 1) * self.cell_size + self.grid.indent_x
+                y = random.randint(0, self.grid.rows - 1) * self.cell_size + self.grid.indent_y
+                if (x, y) not in used_coordinates:
+                    used_coordinates.append((x, y))
+                    # Исключаем позицию почтальона
+                    if (x, y) != (self.cell_size, self.cell_size):
+                        self.houses.append(House('assets/домик.png', (x, y), self.cell_size))
+            self.waypoints = []
+            self.connections = []
 
-    # __POSTMAN__
-    postman_start = pygame.image.load('почтальон стоит.png')
-    postman_start = pygame.transform.scale(postman_start, (50, 50))
-    screen.blit(postman_start, (cell_size, cell_size))
+    def load_map(self, filename):
+        data = None
+        try:
+            with open(filename, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except Exception as e:
+            print(f"Ошибка чтения карты: {e}")
+            return None
+        if not data:
+            print("Не удалось загрузить данные карты. Будет использована случайная генерация.")
+            return
+        # Инициализация игрового поля
+        grid_data = data.get("grid", {})
+        self.width = grid_data.get("width", self.width)
+        self.height = grid_data.get("height", self.height)
+        self.cell_size = grid_data.get("cell_size", self.cell_size)
+        self.grid = Grid(self.width, self.height, self.window_width, self.window_height,
+                         self.cell_size, self.BLACK)
+        # Инициализация почтальона
+        postman_data = data.get("postman", {})
+        start_pos = postman_data.get("start_pos", [1, 1])
+        postman_pixel_pos = ((start_pos[0] * self.cell_size) + self.grid.indent_x,
+                             (start_pos[1] * self.cell_size) + self.grid.indent_y)
+        self.postman = Postman('assets/почтальон стоит.png', postman_pixel_pos, self.cell_size, postman_data.get("id"))
+        # Загрузка домов
+        self.houses = []
+        for house_data in data.get("houses", []):
+            col, row = house_data["position"]
+            pos = (col * self.cell_size + self.grid.indent_x, row * self.cell_size + self.grid.indent_y)
+            self.houses.append(House('assets/домик.png', pos, self.cell_size, id=house_data.get("id")))
+        # Загрузка промежуточных точек
+        self.waypoints = []
+        for wp_data in data.get("waypoints", []):
+            col, row = wp_data["position"]
+            pos = (col * self.cell_size + self.grid.indent_x, row * self.cell_size + self.grid.indent_y)
+            self.waypoints.append(Waypoint(pos, self.cell_size, id=wp_data.get("id")))
+        # Загрузка путей
+        self.connections = data.get("connections", [])
 
+    def draw_roads(self):
+        objects_by_id = {self.postman.id: self.postman}
+        for house in self.houses:
+            if house.id is not None:
+                objects_by_id[house.id] = house
+        for wp in self.waypoints:
+            if wp.id is not None:
+                objects_by_id[wp.id] = wp
+        # Отрисовка дорог между объектами
+        for connection in self.connections:
+            from_id = connection.get("from")
+            to_id = connection.get("to")
+            if from_id in objects_by_id and to_id in objects_by_id:
+                start_obj = objects_by_id[from_id]
+                end_obj = objects_by_id[to_id]
+                pygame.draw.line(self.screen, self.ROAD_COLOR,
+                                 start_obj.get_center(), end_obj.get_center(), 4)
+                # Если в connection есть поле distance, выводим его в середине линии
+                if "distance" in connection:
+                    mid_x = (start_obj.get_center()[0] + end_obj.get_center()[0]) // 2
+                    mid_y = (start_obj.get_center()[1] + end_obj.get_center()[1]) // 2
+                    distance_text = str(connection["distance"])
+                    text_surface = self.font.render(distance_text, True, self.FONT_COLOR)
+                    self.screen.blit(text_surface, (mid_x, mid_y))
 
-    # __HOUSES__
-    for x, y in points:
-        if x != 100 and y != 100:
-            house = pygame.image.load('домик.png')
-            house = pygame.transform.scale(house, (50, 50))
-            screen.blit(house, (x, y))
+    def run(self):
+        running = True
+        # TODO: Удалить
+        self.postman.set_path([(0, 0), [1, 0], [1, 1]])
+        while running:
+            dt = self.clock.tick(60) / 1000
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+            self.screen.fill(self.WHITE)
+            self.grid.draw(self.screen)
+            self.draw_roads()
+            for house in self.houses:
+                house.draw(self.screen)
+            for wp in self.waypoints:
+                wp.draw(self.screen)
+            self.postman.move(dt)
+            self.postman.draw(self.screen)
+            pygame.display.flip()
+        pygame.quit()
 
-    # # __FACTORY__
-    # factory = pygame.image.load('завод.png')
-    # factory = pygame.transform.scale(factory, (100, 100))
-    # screen.blit(factory, (x_factory, y_factory))
-    #
-    # # __SCHOOL__
-    # school = pygame.image.load('школа.png')
-    # school = pygame.transform.scale(school, (150, 150))
-    # screen.blit(school, (x_school, y_school))
-
-    pygame.display.flip()
-
-
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-
-
-pygame.quit()
-
+if __name__ == '__main__':
+    game = Game(map_file="assets/map.json")
+    game.run()

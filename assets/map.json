@@ -1,0 +1,27 @@
+{
+  "grid": {
+    "width": 500,
+    "height": 500,
+    "cell_size": 50
+  },
+  "postman": {
+    "id": "S",
+    "start_pos": [0, 0]
+  },
+  "houses": [
+    {"id": "H1", "position": [1, 1]},
+    {"id": "H2", "position": [1, 6]},
+    {"id": "H3", "position": [5, 6]}
+  ],
+  "waypoints": [
+    {"id": "W1", "position": [5, 1]},
+    {"id": "W2", "position": [1, 0]}
+  ],
+  "connections": [
+    {"from": "S", "to": "W2", "distance": 1},
+    {"from": "W2", "to": "H1", "distance": 1},
+    {"from": "H1", "to": "W1", "distance": 200},
+    {"from": "W1", "to": "H3", "distance": 100},
+    {"from": "H3", "to": "H2", "distance": 50}
+  ]
+}
