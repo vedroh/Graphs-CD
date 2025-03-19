@@ -15,13 +15,14 @@
   ],
   "waypoints": [
     {"id": "W1", "position": [5, 1]},
-    {"id": "W2", "position": [1, 0]}
+    {"id": "W2", "position": [1, 0]},
+    {"id": "P", "position": [0, 0]}
   ],
   "connections": [
-    {"from": "S", "to": "W2", "distance": 1},
-    {"from": "W2", "to": "H1", "distance": 1},
-    {"from": "H1", "to": "W1", "distance": 200},
-    {"from": "W1", "to": "H3", "distance": 100},
-    {"from": "H3", "to": "H2", "distance": 50}
+    {"from": "P", "to": "W2"},
+    {"from": "W2", "to": "H1"},
+    {"from": "H1", "to": "W1"},
+    {"from": "W1", "to": "H3"},
+    {"from": "H3", "to": "H2"}
   ]
 }

@@ -56,13 +56,15 @@ class Game:
             count_of_points = random.randint(3, 8)
             used_coordinates = []
             for _ in range(count_of_points):
-                x = random.randint(0, self.grid.cols - 1) * self.cell_size + self.grid.indent_x
-                y = random.randint(0, self.grid.rows - 1) * self.cell_size + self.grid.indent_y
+                x_index = random.randint(0, self.grid.cols - 1)
+                y_index = random.randint(0, self.grid.rows - 1)
+                x = x_index * self.cell_size + self.grid.indent_x
+                y = y_index * self.cell_size + self.grid.indent_y
                 if (x, y) not in used_coordinates:
                     used_coordinates.append((x, y))
                     # Исключаем позицию почтальона
                     if (x, y) != (self.cell_size, self.cell_size):
-                        self.houses.append(House('assets/домик.png', (x, y), self.cell_size))
+                        self.houses.append(House('assets/домик.png', (x, y), (x_index, y_index), self.cell_size))
             self.waypoints = []
             self.connections = []
 
@@ -89,19 +91,19 @@ class Game:
         start_pos = postman_data.get("start_pos", [1, 1])
         postman_pixel_pos = ((start_pos[0] * self.cell_size) + self.grid.indent_x,
                              (start_pos[1] * self.cell_size) + self.grid.indent_y)
-        self.postman = Postman('assets/почтальон стоит.png', postman_pixel_pos, self.cell_size, postman_data.get("id"))
+        self.postman = Postman('assets/почтальон стоит.png', postman_pixel_pos, (start_pos[0], start_pos[1]), self.cell_size, postman_data.get("id"))
         # Загрузка домов
         self.houses = []
         for house_data in data.get("houses", []):
             col, row = house_data["position"]
             pos = (col * self.cell_size + self.grid.indent_x, row * self.cell_size + self.grid.indent_y)
-            self.houses.append(House('assets/домик.png', pos, self.cell_size, id=house_data.get("id")))
+            self.houses.append(House('assets/домик.png', pos, (col, row), self.cell_size, id=house_data.get("id")))
         # Загрузка промежуточных точек
         self.waypoints = []
         for wp_data in data.get("waypoints", []):
             col, row = wp_data["position"]
             pos = (col * self.cell_size + self.grid.indent_x, row * self.cell_size + self.grid.indent_y)
-            self.waypoints.append(Waypoint(pos, self.cell_size, id=wp_data.get("id")))
+            self.waypoints.append(Waypoint(pos, (col, row), self.cell_size, id=wp_data.get("id")))
         # Загрузка путей
         self.connections = data.get("connections", [])
 
@@ -122,18 +124,17 @@ class Game:
                 end_obj = objects_by_id[to_id]
                 pygame.draw.line(self.screen, self.ROAD_COLOR,
                                  start_obj.get_center(), end_obj.get_center(), 4)
-                # Если в connection есть поле distance, выводим его в середине линии
-                if "distance" in connection:
-                    mid_x = (start_obj.get_center()[0] + end_obj.get_center()[0]) // 2
-                    mid_y = (start_obj.get_center()[1] + end_obj.get_center()[1]) // 2
-                    distance_text = str(connection["distance"])
-                    text_surface = self.font.render(distance_text, True, self.FONT_COLOR)
-                    self.screen.blit(text_surface, (mid_x, mid_y))
+                # Отрисовка расстояний
+                mid_x = (start_obj.get_center()[0] + end_obj.get_center()[0]) // 2
+                mid_y = (start_obj.get_center()[1] + end_obj.get_center()[1]) // 2
+                distance_text = str(int(((start_obj.cell_index[0] - end_obj.cell_index[0]) ** 2 + (start_obj.cell_index[1] - end_obj.cell_index[1]) ** 2)**0.5))
+                text_surface = self.font.render(distance_text, True, self.FONT_COLOR)
+                self.screen.blit(text_surface, (mid_x, mid_y))
 
     def run(self):
         running = True
         # TODO: Удалить
-        self.postman.set_path([(0, 0), [1, 0], [1, 1]])
+        self.postman.set_path([(50, 50), (100, 50), (100, 100)])
         while running:
             dt = self.clock.tick(60) / 1000
             for event in pygame.event.get():
