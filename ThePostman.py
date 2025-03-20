@@ -46,10 +46,23 @@ class Game:
         pygame.display.set_caption("Postman")
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont(None, 24)
+
+        self.start_button = pygame.Rect(self.window_width//2 - 50, self.height + 55, 100, 30)
+        self.start_button_color = (0, 200, 0)
+        self.start_button_hover = False
+
+        self.objects_by_id = {}
+        self.waypoints = []
+        self.connections = []
+        self.houses = []
+        self.postman = None
+        self.grid = None
+
         if map_file:
             self.load_map(map_file)
         else:
-            self.grid = Grid(self.width, self.height, self.window_width, self.window_height,
+            # Случайная генерация карты
+            '''self.grid = Grid(self.width, self.height, self.window_width, self.window_height,
                              self.cell_size, self.BLACK)
             self.postman = Postman('assets/почтальон стоит.png', (self.cell_size, self.cell_size), self.cell_size)
             self.houses = []
@@ -66,7 +79,8 @@ class Game:
                     if (x, y) != (self.cell_size, self.cell_size):
                         self.houses.append(House('assets/домик.png', (x, y), (x_index, y_index), self.cell_size))
             self.waypoints = []
-            self.connections = []
+            self.connections = []'''
+            pass
 
     def load_map(self, filename):
         data = None
@@ -131,16 +145,52 @@ class Game:
                 text_surface = self.font.render(distance_text, True, self.FONT_COLOR)
                 self.screen.blit(text_surface, (mid_x, mid_y))
 
+    def create_graph(self):
+        graph = {}
+        for obj in self.objects_by_id:
+            graph[obj.id] = {}
+        for connection in self.connections:
+            from_id = connection.get("from")
+            to_id = connection.get("to")
+            distance = int(((self.objects_by_id[from_id].cell_index[0] - self.objects_by_id[to_id].cell_index[0]) ** 2 + (self.objects_by_id[from_id].cell_index[1] - self.objects_by_id[to_id].cell_index[1]) ** 2)**0.5)
+            graph[from_id][to_id] = distance
+            graph[to_id][from_id] = distance
+        return graph
+
+    def djikstra(self, graph, start):
+        distances = {vertex: float('inf') for vertex in graph}
+        distances[start] = 0
+        pre = {vertex: None for vertex in graph}
+        priority_queue = [(0, start)]
+        while priority_queue:
+            pass
+
+
     def run(self):
         running = True
-        # TODO: Удалить
-        self.postman.set_path([(50, 50), (100, 50), (100, 100)])
         while running:
             dt = self.clock.tick(60) / 1000
+            mouse_pos = pygame.mouse.get_pos()
+            self.start_button_hover = self.start_button.collidepoint(mouse_pos)
+            self.start_button_color = (0, 220, 0) if self.start_button_hover else (0, 200, 0)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        self.start_button_color = (0, 100, 0)
+                if event.type == pygame.MOUSEBUTTONUP:
+                    if event.button == 1:
+                        self.start_button_color = (0, 220, 0)
+                        if self.start_button_hover:
+                            self.postman.set_path(self.djikstra(self.create_graph(), self.postman.id))
+                            self.postman.start_moving()
+
             self.screen.fill(self.WHITE)
+            pygame.draw.rect(self.screen, self.start_button_color, self.start_button)
+            text = self.font.render("Пуск", True, (255, 255, 255))
+            text_rect = text.get_rect(center=self.start_button.center)
+            self.screen.blit(text, text_rect)
             self.grid.draw(self.screen)
             self.draw_roads()
             for house in self.houses:

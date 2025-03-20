@@ -39,7 +39,7 @@ class Postman(House):
         self.speed = 30
         self.next_index = 1
         self.current_position = pygame.Vector2(self.position)
-
+        self.is_moving = False
 
     def set_path(self, path):
         self.path = path
@@ -47,8 +47,11 @@ class Postman(House):
     def draw(self, surface):
         surface.blit(self.image, self.rect)
 
+    def start_moving(self):
+        self.is_moving = True
+
     def move(self, dt):
-        if self.next_index >= len(self.path):
+        if self.next_index >= len(self.path) or not self.is_moving:
             return
         target = pygame.Vector2(self.path[self.next_index])
         direction = (target - self.current_position).normalize()
