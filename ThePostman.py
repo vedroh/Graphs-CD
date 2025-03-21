@@ -1,3 +1,5 @@
+import heapq
+
 import pygame
 import random
 import json
@@ -122,20 +124,20 @@ class Game:
         self.connections = data.get("connections", [])
 
     def draw_roads(self):
-        objects_by_id = {self.postman.id: self.postman}
+        self.objects_by_id = {}
         for house in self.houses:
             if house.id is not None:
-                objects_by_id[house.id] = house
+                self.objects_by_id[house.id] = house
         for wp in self.waypoints:
             if wp.id is not None:
-                objects_by_id[wp.id] = wp
+                self.objects_by_id[wp.id] = wp
         # Отрисовка дорог между объектами
         for connection in self.connections:
             from_id = connection.get("from")
             to_id = connection.get("to")
-            if from_id in objects_by_id and to_id in objects_by_id:
-                start_obj = objects_by_id[from_id]
-                end_obj = objects_by_id[to_id]
+            if from_id in self.objects_by_id and to_id in self.objects_by_id:
+                start_obj = self.objects_by_id[from_id]
+                end_obj = self.objects_by_id[to_id]
                 pygame.draw.line(self.screen, self.ROAD_COLOR,
                                  start_obj.get_center(), end_obj.get_center(), 4)
                 # Отрисовка расстояний
@@ -148,7 +150,7 @@ class Game:
     def create_graph(self):
         graph = {}
         for obj in self.objects_by_id:
-            graph[obj.id] = {}
+            graph[obj] = {}
         for connection in self.connections:
             from_id = connection.get("from")
             to_id = connection.get("to")
@@ -157,13 +159,68 @@ class Game:
             graph[to_id][from_id] = distance
         return graph
 
-    def djikstra(self, graph, start):
-        distances = {vertex: float('inf') for vertex in graph}
-        distances[start] = 0
-        pre = {vertex: None for vertex in graph}
-        priority_queue = [(0, start)]
-        while priority_queue:
-            pass
+    def djikstra(self, graph, houses, start):
+        total_path = []
+        route = []
+        # Пока остаются дома, которые нужно посетить
+        while houses:
+            # Инициализируем словари расстояний и предков для восстановления пути
+            distances = {vertex: float('inf') for vertex in graph}
+            distances[start] = 0
+            pre = {vertex: None for vertex in graph}
+
+            # Множество непосещённых вершин
+            unvisited = set(graph.keys())
+            priority_queue = [(0, start)]
+
+            # Основной цикл алгоритма Дейкстры
+            while priority_queue:
+                current_distance, current_vertex = heapq.heappop(priority_queue)
+                if current_vertex not in unvisited:
+                    continue
+                unvisited.remove(current_vertex)
+                for neighbor, weight in graph[current_vertex].items():
+                    distance = current_distance + weight
+                    if distance < distances[neighbor]:
+                        distances[neighbor] = distance
+                        pre[neighbor] = current_vertex
+                        heapq.heappush(priority_queue, (distance, neighbor))
+
+            # Поиск дома (из списка houses) с кратчайшим расстоянием от start
+            next_house = None
+            min_distance = float('inf')
+            for house in houses:
+                if distances[house] < min_distance and house != start:
+                    min_distance = distances[house]
+                    next_house = house
+
+            # Если ни один дом не достижим, можно завершать выполнение
+            if next_house is None:
+                break
+
+            route = []
+            # Восстанавливаем маршрут от start до найденного дома
+            current = next_house
+            while current is not None:
+                route.append(current)
+                current = pre[current]
+            route.reverse()  # чтобы путь шёл от start до next_house
+
+            # Удаляем все дома из маршрута, если они присутствуют в списке houses
+            for node in route:
+                if node in houses:
+                    houses.remove(node)
+
+            # Добавляем найденный маршрут к общему пути
+            total_path.extend(route[:-1])
+
+            # Обновляем start для следующей итерации
+            start = next_house
+
+        total_path.append(route[-1])
+
+        return [self.objects_by_id[house].position for house in total_path]
+
 
 
     def run(self):
@@ -183,7 +240,7 @@ class Game:
                     if event.button == 1:
                         self.start_button_color = (0, 220, 0)
                         if self.start_button_hover:
-                            self.postman.set_path(self.djikstra(self.create_graph(), self.postman.id))
+                            self.postman.set_path(self.djikstra(self.create_graph(), [house.id for house in self.houses], "P"))
                             self.postman.start_moving()
 
             self.screen.fill(self.WHITE)

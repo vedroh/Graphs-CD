@@ -11,12 +11,12 @@
   "houses": [
     {"id": "H1", "position": [1, 1]},
     {"id": "H2", "position": [1, 6]},
-    {"id": "H3", "position": [5, 6]}
+    {"id": "H3", "position": [5, 6]},
+    {"id": "P", "position": [0, 0]}
   ],
   "waypoints": [
     {"id": "W1", "position": [5, 1]},
-    {"id": "W2", "position": [1, 0]},
-    {"id": "P", "position": [0, 0]}
+    {"id": "W2", "position": [1, 0]}
   ],
   "connections": [
     {"from": "P", "to": "W2"},
