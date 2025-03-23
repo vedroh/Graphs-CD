@@ -17,8 +17,11 @@ class MapObject:
 class House(MapObject):
     def __init__(self, image_path, position, cell_index, cell_size, id=None):
         super().__init__(position, cell_index, cell_size, id)
+        self.set_image(image_path)
+
+    def set_image(self, image_path):
         self.image = pygame.image.load(image_path)
-        self.image = pygame.transform.scale(self.image, (cell_size, cell_size))
+        self.image = pygame.transform.scale(self.image, (self.rect.width, self.rect.height))
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)
@@ -50,7 +53,7 @@ class Postman(House):
     def start_moving(self):
         self.is_moving = True
 
-    def move(self, dt):
+    def move(self, dt, houses):
         if self.next_index >= len(self.path) or not self.is_moving:
             return
         target = pygame.Vector2(self.path[self.next_index])
@@ -58,6 +61,12 @@ class Postman(House):
         distance_to_target = (target - self.current_position).length()
         if self.speed * dt >= distance_to_target:
             self.current_position = target
+
+            for house in houses:
+                if house.position == self.path[self.next_index]:
+                    house.set_image("assets/домик_ok.png")
+                    break
+
             self.next_index += 1
         else:
             self.current_position += (self.speed * dt) * direction

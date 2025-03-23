@@ -211,6 +211,7 @@ class Game:
                 if node in houses:
                     houses.remove(node)
 
+            print(route)
             # Добавляем найденный маршрут к общему пути
             total_path.extend(route[:-1])
 
@@ -219,12 +220,17 @@ class Game:
 
         total_path.append(route[-1])
 
-        return [self.objects_by_id[house].position for house in total_path]
+        total_distance = 0
+        for i in range(len(total_path) - 1):
+            dx = self.objects_by_id[total_path[i]].cell_index[0] - self.objects_by_id[total_path[i+1]].cell_index[0]
+            dy = self.objects_by_id[total_path[i]].cell_index[1] - self.objects_by_id[total_path[i+1]].cell_index[1]
+            total_distance += int((dx**2 + dy**2)**0.5)
 
-
+        return total_distance, [self.objects_by_id[house].position for house in total_path]
 
     def run(self):
         running = True
+        total_distance = 0
         while running:
             dt = self.clock.tick(60) / 1000
             mouse_pos = pygame.mouse.get_pos()
@@ -240,11 +246,20 @@ class Game:
                     if event.button == 1:
                         self.start_button_color = (0, 220, 0)
                         if self.start_button_hover:
-                            self.postman.set_path(self.djikstra(self.create_graph(), [house.id for house in self.houses], "P"))
+                            postman_pixel_pos = ((self.objects_by_id['P'].cell_index[0] * self.cell_size) + self.grid.indent_x,
+                                                 (self.objects_by_id['P'].cell_index[1] * self.cell_size) + self.grid.indent_y)
+                            self.postman = Postman('assets/почтальон стоит.png', postman_pixel_pos, self.objects_by_id['P'].position, self.cell_size, 'P')
+                            total_distance, path = self.djikstra(self.create_graph(), [house.id for house in self.houses], "P")
+                            self.postman.set_path(path)
                             self.postman.start_moving()
 
             self.screen.fill(self.WHITE)
             pygame.draw.rect(self.screen, self.start_button_color, self.start_button)
+
+            distance_text = f"Длина пути: {total_distance}"
+            text_surface = self.font.render(distance_text, True, self.FONT_COLOR)
+            self.screen.blit(text_surface, (self.start_button.x - 150, self.start_button.y + 10))
+
             text = self.font.render("Пуск", True, (255, 255, 255))
             text_rect = text.get_rect(center=self.start_button.center)
             self.screen.blit(text, text_rect)
@@ -254,7 +269,7 @@ class Game:
                 house.draw(self.screen)
             for wp in self.waypoints:
                 wp.draw(self.screen)
-            self.postman.move(dt)
+            self.postman.move(dt, self.houses)
             self.postman.draw(self.screen)
             pygame.display.flip()
         pygame.quit()
