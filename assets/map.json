@@ -9,20 +9,43 @@
     "start_pos": [0, 0]
   },
   "houses": [
-    {"id": "H1", "position": [1, 1]},
-    {"id": "H2", "position": [1, 6]},
-    {"id": "H3", "position": [5, 6]},
+    {"id": "H1", "position": [3, 2]},
+    {"id": "H2", "position": [8, 2]},
+    {"id": "H3", "position": [7, 4]},
+    {"id": "H4", "position": [2, 5]},
+    {"id": "H5", "position": [5, 8]},
     {"id": "P", "position": [0, 0]}
   ],
   "waypoints": [
-    {"id": "W1", "position": [5, 1]},
-    {"id": "W2", "position": [1, 0]}
+    {"id": "W1", "position": [3, 0]},
+    {"id": "W2", "position": [7, 2]},
+    {"id": "W3", "position": [3, 4]},
+    {"id": "W4", "position": [2, 4]},
+    {"id": "W5", "position": [5, 5]},
+    {"id": "W6", "position": [7, 5]},
+    {"id": "W7", "position": [2, 7]},
+    {"id": "W8", "position": [3, 7]},
+    {"id": "W9", "position": [3, 8]},
+    {"id": "W10", "position": [7, 8]}
   ],
   "connections": [
-    {"from": "P", "to": "W2"},
-    {"from": "W2", "to": "H1"},
-    {"from": "H1", "to": "W1"},
-    {"from": "W1", "to": "H3"},
-    {"from": "H3", "to": "H2"}
+    {"from": "P", "to": "W1"},
+    {"from": "W1", "to": "H1"},
+    {"from": "H1", "to": "W2"},
+    {"from": "H1", "to": "W3"},
+    {"from": "W2", "to": "H2"},
+    {"from": "W2", "to": "H3"},
+    {"from": "W3", "to": "W4"},
+    {"from": "W4", "to": "H4"},
+    {"from": "H3", "to": "W6"},
+    {"from": "H4", "to": "W5"},
+    {"from": "H4", "to": "W7"},
+    {"from": "W6", "to": "W5"},
+    {"from": "W6", "to": "W10"},
+    {"from": "W7", "to": "W8"},
+    {"from": "W8", "to": "W9"},
+    {"from": "W9", "to": "H5"},
+    {"from": "W5", "to": "H5"},
+    {"from": "H5", "to": "W10"}
   ]
 }
