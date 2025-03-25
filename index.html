@@ -5,10 +5,12 @@
 <p>Почтальон стоит в левом верхнем углу, его задача - пройти все дома коротким (не обязательно кратчайшим, потому что жадный алгоритм не нацелен на это) путем.<p>
 <p>При запуске программы внизу появляется кнопка “Пуск”, после нажатия на которую почтальон начинает движение. Пройденные дома отмечаются галочкой, а внизу выводится общее пройденное почтальоном расстояние.</p>
 
-<a href="https://vedroh.github.io/Graphs-CD/">Ссылка на репозиторий GitHub</a>
+<a href="https://github.com/vedroh/Graphs-CD">Ссылка на репозиторий GitHub</a>
 
-<img src="Карта" alt="Так выглядит карта">
-<img src="IMG_0510.jpg" alt="Процесс создания карты">
+<div class="image-container">
+  <img src="Карта" alt="Так выглядит карта" id="custom-image">
+  <img src="IMG_0510.jpg" alt="Процесс создания карты" id="custom-image">
+</div>
 
 <style>
   h1 {
@@ -23,4 +25,16 @@
     font-size: 120%
     #color: #042ED9
   } 
+
+  .image-container {
+    text-align: center; 
+    padding: 20px;
+  }
+  #custom-image {
+    width: 60%;
+    max-width: 500px;
+    border: 3px solid #ff5722;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
 </style>
